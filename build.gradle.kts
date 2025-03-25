@@ -1,8 +1,9 @@
+@file:OptIn(ExperimentalStdlibApi::class)
+
 plugins {
-    kotlin("multiplatform") version "1.7.20"
+    kotlin("multiplatform") version "2.1.20"
     id("maven-publish")
-    `java-library`
-    id("org.jetbrains.dokka") version "1.7.20"
+    id("org.jetbrains.dokka") version "2.0.0"
 }
 
 group = "com.github.winterreisender"
@@ -13,21 +14,17 @@ repositories {
     mavenCentral()
 }
 
-tasks.dokkaHtml.configure {
-    outputDirectory.set(rootDir.resolve("docs/kdoc"))
+dokka {
+    dokkaPublications.html {
+        outputDirectory.set(rootDir.resolve("docs/kdoc"))
+    }
 }
 
 lateinit var osPrefix :String
 
 kotlin {
+    jvmToolchain(17)
     jvm {
-        compilations.all {
-            kotlinOptions.jvmTarget = "1.8"
-        }
-        withJava()
-        java {
-            withSourcesJar()
-        }
         testRuns["test"].executionTask.configure {
             useJUnitPlatform()
         }
@@ -133,18 +130,18 @@ kotlin {
         val nativeTest by getting
     }
 
-    publishing {
-        publications {
-            matching {it.name == "native"}.all {
-                val targetPublication = this@all
-                tasks.withType<AbstractPublishToMaven>()
-                    .matching { it.publication == targetPublication }
-                    .configureEach {
-                        publication.artifactId = "webviewko-${osPrefix}".toLowerCase()
-                    }
-            }
-        }
-    }
+//    publishing {
+//        publications {
+//            matching {it.name == "native"}.all {
+//                val targetPublication = this@all
+//                tasks.withType<AbstractPublishToMaven>()
+//                    .matching { it.publication == targetPublication }
+//                    .configureEach {
+//                        publication.artifactId = "webviewko-${osPrefix}".lowercase()
+//                    }
+//            }
+//        }
+//    }
 }
 
 /* deprecated shadow jar
@@ -168,29 +165,29 @@ tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
 }
 
-publishing {
-    repositories {
-        maven {
-            name = "GitLabPackages"
-            url = uri("https://gitlab.com/api/v4/projects/38224197/packages/maven")
-            credentials(HttpHeaderCredentials::class) {
-                //name = "Deploy-Token"
-                name =  "Private-Token"
-                value = System.getenv("GITLAB_TOKEN")
-            }
-            authentication {
-                create<HttpHeaderAuthentication>("header")
-            }
-        }
-    }
-    publications {
-        matching {it.name == "native"}.all {
-            val targetPublication = this@all
-            tasks.withType<AbstractPublishToMaven>()
-                .matching { it.publication == targetPublication }
-                .configureEach {
-                    publication.artifactId = "webviewko-${osPrefix}".toLowerCase()
-                }
-        }
-    }
-}
+//publishing {
+//    repositories {
+//        maven {
+//            name = "GitLabPackages"
+//            url = uri("https://gitlab.com/api/v4/projects/38224197/packages/maven")
+//            credentials(HttpHeaderCredentials::class) {
+//                //name = "Deploy-Token"
+//                name =  "Private-Token"
+//                value = System.getenv("GITLAB_TOKEN")
+//            }
+//            authentication {
+//                create<HttpHeaderAuthentication>("header")
+//            }
+//        }
+//    }
+//    publications {
+//        matching {it.name == "native"}.all {
+//            val targetPublication = this@all
+//            tasks.withType<AbstractPublishToMaven>()
+//                .matching { it.publication == targetPublication }
+//                .configureEach {
+//                    publication.artifactId = "webviewko-${osPrefix}".lowercase()
+//                }
+//        }
+//    }
+//}

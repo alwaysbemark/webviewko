@@ -16,11 +16,14 @@
  * SPDX short identifier: Apache-2.0
  */
 
+@file:OptIn(ExperimentalForeignApi::class, ExperimentalAtomicApi::class)
+
 package com.github.winterreisender.webviewko
 
 import kotlinx.cinterop.*
 import com.github.winterreisender.cwebview.*
-import kotlin.native.concurrent.AtomicReference
+import kotlin.concurrent.atomics.*
+
 
 private typealias BindContext = Pair<WebviewKo,WebviewKo.(String?) -> Pair<String,Int>?>
 private typealias DispatchContext = Pair<WebviewKo,WebviewKo.() ->Unit>
@@ -40,15 +43,17 @@ actual class WebviewKo actual constructor(debug: Int, libPath :String?) {
     // Garbage Collection List for bind and dispatch
     private val disposeList = AtomicReference(listOf<StableRef<Any>>())
     private fun addDispose(s: StableRef<Any>){
-        disposeList.value = mutableListOf<StableRef<Any>>().apply {
-            addAll(disposeList.value)
-            if(!contains(s)){
-                add(s)
+        disposeList.store(
+            mutableListOf<StableRef<Any>>().apply {
+                addAll(disposeList.load())
+                if(!contains(s)){
+                    add(s)
+                }
             }
-        }
+        )
     }
     protected fun finalize() {
-        disposeList.value.forEach { it.dispose() }
+        disposeList.load().forEach { it.dispose() }
         webview_destroy(w)
     }
 
@@ -138,7 +143,6 @@ actual class WebviewKo actual constructor(debug: Int, libPath :String?) {
         webview_bind(
             w,name,
             staticCFunction { seq,req,arg ->
-                initRuntimeIfNeeded()
                 val (webviewKo,callback) = arg!!.asStableRef<BindContext>().get()
                 val (response, status) = callback(webviewKo, req?.toKString()) ?: return@staticCFunction
                 webview_return(webviewKo.w, seq?.toKString(), status, response)
@@ -198,7 +202,6 @@ actual class WebviewKo actual constructor(debug: Int, libPath :String?) {
         webview_dispatch(
             w,
             staticCFunction { w,arg ->
-                initRuntimeIfNeeded()
                 val ctx = arg!!.asStableRef<DispatchContext>()
                 val (webviewKo,callback) = ctx.get()
                 callback(webviewKo)

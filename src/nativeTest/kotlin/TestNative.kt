@@ -1,5 +1,8 @@
+@file:OptIn(ExperimentalForeignApi::class)
+
 import com.github.winterreisender.webviewko.WebviewKo
 import com.github.winterreisender.cwebview.*
+import kotlinx.cinterop.ExperimentalForeignApi
 import platform.posix.sleep
 import kotlin.native.concurrent.TransferMode
 import kotlin.native.concurrent.Worker
